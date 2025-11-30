@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Pearl Island — Mobile (GLB-ready)</title>
+<style>
+:root{
+  --bg:#071226; --card:#07121a; --accent:#ffb84d; --muted:#b7c6cf;
+  --glass: rgba(255,255,255,0.03);
+  --ui-font: Inter, system-ui, Roboto, Arial, "Segoe UI";
+}
+*{box-sizing:border-box;}
+html,body{height:100%;margin:0;font-family:var(--ui-font);background:linear-gradient(180deg,#031423,#071826);color:#eaf2f7;-webkit-font-smoothing:antialiased; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;}
+#app{max-width:1200px;margin:6px auto;height:calc(100vh - 12px);display:flex;flex-direction:column;gap:8px;padding:6px;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;}
+.logo{font-weight:800;font-size:18px;}
+.hud{display:flex;gap:8px;align-items:center;}
+.panel{background:var(--glass);padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);font-size:13px;text-align:center;min-width:72px;}
+#canvas-wrap{position:relative;flex:1;border-radius:12px;overflow:hidden;box-shadow:0 18px 50px rgba(0,0,0,0.6);background:linear-gradient(180deg,#0b3148,#02151a);}
+.controls{position:absolute;right:12px;bottom:12px;display:flex;flex-direction:column;gap:8px;z-index:120;}
+.btn{padding:10px 12px;border-radius:12px;border:2px solid var(--accent);background:transparent;color:var(--accent);font-weight:800;cursor:pointer;outline:none;transition:transform .12s cubic-bezier(.2,.9,.2,1),box-shadow .12s;}
+.btn:active{transform:translateY(2px) scale(.98);}
+.btn-primary{background:linear-gradient(90deg,var(--accent),#ffdca3);color:#2b1a00;border-color:transparent;box-shadow:0 10px 30px rgba(255,184,77,0.12);}
+.btn-outline{box-shadow:0 6px 18px rgba(2,6,23,0.6);}
+.floating{position:absolute;left:50%;top:12px;transform:translateX(-50%);padding:8px 12px;border-radius:999px;background:rgba(0,0,0,0.45);font-weight:600;color:var(--muted);z-index:120;font-size:13px;}
+.shop-modal{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);min-width:300px;background:linear-gradient(180deg,#081826,#071426);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);z-index:220;display:none;}
+.shop-row{display:flex;justify-content:space-between;align-items:center;padding:8px 6px;border-bottom:1px solid rgba(255,255,255,0.02);font-size:14px;}
+.small{font-size:12px;color:var(--muted);}
+.coins{position:absolute;right:18px;top:72px;display:flex;flex-direction:column;gap:6px;align-items:flex-end;z-index:200;}
+.coin{padding:6px 10px;border-radius:999px;background:linear-gradient(90deg,#fff2cc,#ffd06b);color:#5a3300;font-weight:800;transform:translateY(-6px);opacity:0;transition:all .7s;}
+.flash{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.6);padding:10px 18px;border-radius:12px;color:#fff;font-weight:800;z-index:300;opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;}
+.mission-failed{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);color:#ff4b4b;font-size:28px;font-weight:900;z-index:400;opacity:0;transition:opacity .3s, transform .3s;}
+.joystick{position:absolute;left:14px;bottom:14px;width:110px;height:110px;border-radius:999px;z-index:140;display:flex;align-items:center;justify-content:center;touch-action:none;}
+.stick-base{position:absolute;width:82px;height:82px;border-radius:999px;background:rgba(255,255,255,0.02);border:2px solid rgba(255,255,255,0.03);}
+.stick-knob{position:absolute;width:44px;height:44px;border-radius:999px;background:linear-gradient(180deg,#ffffff10,#00000008);border:2px solid rgba(255,255,255,0.06);transform:translate(0,0);transition:transform .05s linear;box-shadow:0 8px 24px rgba(0,0,0,0.5);}
+.overlay{position:absolute;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:400;opacity:0;pointer-events:none;transition:opacity .18s;}
+.overlay.open{opacity:1;pointer-events:auto;}
+.menu-card{background:linear-gradient(180deg,#0b1720,#081426);padding:20px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);width:320px;box-shadow:0 20px 60px rgba(0,0,0,0.6);text-align:center;}
+.menu-title{font-weight:800;margin-bottom:6px;}
+.menu-sub{font-size:13px;color:var(--muted);margin-bottom:12px;}
+.menu-row{display:flex;gap:8px;justify-content:center;margin-top:12px;}
+.file-input{display:none;}
+.upload-wrap{position:absolute;left:12px;top:12px;z-index:300;}
+@media (max-width:900px){
+  .hud{display:none;}
+  .controls{right:50%;left:50%;transform:translateX(-50%);flex-direction:row;}
+  .floating{top:8px;}
+  .upload-wrap{left:8px;top:8px;}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="logo">Pearl Island — Raj (Mobile)</div>
+    <div class="hud">
+      <div class="panel">Money<br><strong id="money">₹0</strong></div>
+      <div class="panel">Inventory<br><strong id="inventory">0/5</strong></div>
+      <div class="panel">Highscore<br><strong id="highscore">0</strong></div>
+    </div>
+  </div>
+
+  <div id="canvas-wrap">
+    <div id="three-root" style="width:100%;height:100%;"></div>
+    <div class="upload-wrap">
+      <label for="modelUpload" class="btn">Upload Model (glb)</label>
+      <input id="modelUpload" class="file-input" type="file" accept=".glb,.gltf">
+      <label for="photoUpload" class="btn btn-outline" style="margin-left:8px">Upload Photo</label>
+      <input id="photoUpload" class="file-input" type="file" accept="image/*">
+    </div>
+
+    <div class="floating">Touch joystick • WASD • Shift run • E sell • M teleport (map)</div>
+    <div id="marketTag" class="panel" style="position:absolute;right:18%;top:12%;display:none;">Market — Sell here</div>
+
+    <div class="controls">
+      <button id="startBtn" class="btn btn-primary">Start</button>
+      <button id="pauseBtn" class="btn">Pause</button>
+      <button id="sellBtn" class="btn btn-primary">SELL ALL</button>
+      <button id="shopBtn" class="btn">SHOP</button>
+    </div>
+
+    <div id="joystick" class="joystick">
+      <div class="stick-base"></div>
+      <div id="stickKnob" class="stick-knob"></div>
+    </div>
+
+    <div id="shop" class="shop-modal" role="dialog" aria-hidden="true">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><strong>Shop</strong>
+        <button id="closeShop" class="btn">Close</button>
+      </div>
+      <div class="shop-row"><div><strong>Backpack</strong><div class="small">+5 inventory</div></div><div><button class="btn" id="buyBag">Buy (₹500)</button></div></div>
+      <div class="shop-row"><div><strong>Magnet</strong><div class="small">Auto-attract pearls</div></div><div><button class="btn" id="buyMagnet">Buy (₹800)</button></div></div>
+      <div class="shop-row"><div><strong>Speed Boots</strong><div class="small">Increase run speed</div></div><div><button class="btn" id="buyBoots">Buy (₹700)</button></div></div>
+      <div class="shop-row"><div><strong>Map (teleport)</strong><div class="small">Teleport to market</div></div><div><button class="btn" id="buyMap">Buy (₹1200)</button></div></div>
+    </div>
+
+    <div class="coins" id="coinLayer"></div>
+    <div id="flash" class="flash"></div>
+    <div id="missionFailed" class="mission-failed">MISSION FAILED!</div>
+
+    <div id="mainMenu" class="overlay open">
+      <div class="menu-card">
+        <div class="menu-title">Pearl Island — Raj</div>
+        <div class="menu-sub">Upload your .glb to replace placeholder model • Or upload face photo</div>
+        <div class="menu-row">
+          <button id="menuStart" class="btn btn-primary">Start Game</button>
+          <button id="menuSettings" class="btn">Settings</button>
+        </div>
+        <div style="margin-top:12px;font-size:13px;color:var(--muted)">Controls: WASD / Arrow keys / Touch joystick • Shift to run • E to sell at market</div>
+      </div>
+    </div>
+
+    <div id="pauseOverlay" class="overlay">
+      <div class="menu-card">
+        <div class="menu-title">Paused</div>
+        <div class="menu-sub">Game is paused — all action frozen</div>
+        <div class="menu-row">
+          <button id="resumeBtn" class="btn btn-primary">Resume</button>
+          <button id="restartBtn" class="btn">Restart</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from 'https://unpkg.com/three@0.154.0/build/three.module.js';
+import { GLTFLoader } from 'https://unpkg.com/three@0.154.0/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'https://unpkg.com/three@0.154.0/examples/jsm/loaders/DRACOLoader.js';
+// ... (the rest of your script unchanged: keep Three.js logic, game loop, input, shop, uploads, UI, etc.)
+</script>
+</body>
+</html>
